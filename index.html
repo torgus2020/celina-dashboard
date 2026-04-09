@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Celina — Sell-In Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--t1:#f8fafc;--t2:#94a3b8;--t3:#64748b;--blue:#2563eb;--green:#4ade80;--red:#f87171;--amber:#fbbf24;--font:system-ui,-apple-system,sans-serif}
+body{font-family:var(--font);background:var(--bg);color:var(--t2);min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.header h1{font-size:24px;font-weight:700;color:var(--t1)}
+.header h1 span{color:var(--blue)}
+.header .sub{font-size:12px;color:var(--t3);margin-top:4px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:20px 0;border-bottom:1px solid var(--border);padding-bottom:8px}
+.tab{padding:8px 16px;border-radius:8px;font-size:12px;color:var(--t3);cursor:pointer;border:1px solid transparent;transition:all .15s}
+.tab:hover{background:var(--card)}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.section{display:none}.section.active{display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--card);border-radius:12px;padding:14px 18px;border:1px solid var(--border)}
+.kpi-l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+.kpi-v{font-size:26px;font-weight:700;color:var(--t1);margin-top:2px}
+.kpi-d{font-size:11px;margin-top:2px}
+.up{color:var(--green)}.down{color:var(--red)}.warn{color:var(--amber)}
+.card{background:var(--card);border-radius:12px;padding:20px;border:1px solid var(--border);margin-bottom:16px}
+.card-t{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.card-s{font-size:11px;color:var(--t3);margin-bottom:16px}
+.chart-wrap{position:relative;height:300px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--t3);font-weight:500}
+td{padding:8px 10px;border-bottom:1px solid #1e293b20}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.b-red{background:#7f1d1d;color:#fca5a5}.b-amb{background:#78350f;color:#fde68a}.b-grn{background:#14532d;color:#86efac}
+.alert{padding:12px 16px;font-size:12px;margin-bottom:8px;border-left:3px solid;border-radius:0 8px 8px 0}
+.a-red{background:#7f1d1d33;border-color:#f87171;color:#fca5a5}
+.a-amb{background:#78350f33;border-color:#fbbf24;color:#fde68a}
+.a-grn{background:#14532d33;border-color:#4ade80;color:#86efac}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.flt{padding:4px 12px;border-radius:6px;font-size:11px;border:1px solid var(--border);color:var(--t3);cursor:pointer;background:transparent}
+.flt.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.narr{line-height:1.8;font-size:13px;color:var(--t2);white-space:pre-line}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:768px){.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1><span>Celina</span> — Sell-In Dashboard</h1>
+<div class="sub">Datos actualizados al N/D · Generado 09/04/2026 20:10 · Fuente: Qlik Cloud</div>
+</div>
+
+<div class="tabs" id="tabs">
+<div class="tab active" onclick="showTab(0)">Resumen y avance</div>
+<div class="tab" onclick="showTab(1)">Evolución por canal</div>
+<div class="tab" onclick="showTab(2)">Recortes</div>
+<div class="tab" onclick="showTab(3)">Portafolio por canal</div>
+<div class="tab" onclick="showTab(4)">Kg/día hábil</div>
+<div class="tab" onclick="showTab(5)">Anomalías y narrativa</div>
+</div>
+
+<div id="content"></div>
+</div>
+
+<script>
+const D = {"meta": {"ano_actual": 2026, "ano_anterior": 2025, "meses_completos": [1, 2, 3], "mes_parcial": 4, "fecha_hasta": "N/D", "timestamp": "2026-04-09T20:10:14.586501", "dias_habiles": {"1": 26, "2": 22, "3": 24, "4": 24, "5": 24, "6": 24, "7": 26, "8": 25, "9": 26, "10": 26, "11": 24, "12": 25}, "mes_nombres": {"1": "Ene", "2": "Feb", "3": "Mar", "4": "Abr", "5": "May", "6": "Jun", "7": "Jul", "8": "Ago", "9": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"}}, "mensual": [{"mes": 1, "year": 2025, "kg": 4113509, "rec": 434124, "kg_dh": 158212, "dh": 26}, {"mes": 2, "year": 2025, "kg": 3836569, "rec": 591237, "kg_dh": 174390, "dh": 22}, {"mes": 3, "year": 2025, "kg": 4350367, "rec": 439788, "kg_dh": 181265, "dh": 24}, {"mes": 4, "year": 2025, "kg": 4802756, "rec": 331566, "kg_dh": 200115, "dh": 24}, {"mes": 5, "year": 2025, "kg": 5151989, "rec": 286017, "kg_dh": 214666, "dh": 24}, {"mes": 6, "year": 2025, "kg": 4597702, "rec": 328904, "kg_dh": 191571, "dh": 24}, {"mes": 7, "year": 2025, "kg": 6495909, "rec": 562498, "kg_dh": 249843, "dh": 26}, {"mes": 8, "year": 2025, "kg": 6042897, "rec": 731363, "kg_dh": 241716, "dh": 25}, {"mes": 9, "year": 2025, "kg": 6828699, "rec": 967242, "kg_dh": 262642, "dh": 26}, {"mes": 10, "year": 2025, "kg": 7325197, "rec": 1019694, "kg_dh": 281738, "dh": 26}, {"mes": 11, "year": 2025, "kg": 6311312, "rec": 525416, "kg_dh": 262971, "dh": 24}, {"mes": 12, "year": 2025, "kg": 7041511, "rec": 615341, "kg_dh": 281660, "dh": 25}, {"mes": 1, "year": 2026, "kg": 5504515, "rec": 741833, "kg_dh": 211712, "dh": 26}, {"mes": 2, "year": 2026, "kg": 6131073, "rec": 825409, "kg_dh": 278685, "dh": 22}, {"mes": 3, "year": 2026, "kg": 6651780, "rec": 1045429, "kg_dh": 277157, "dh": 24}, {"mes": 4, "year": 2026, "kg": 1255731, "rec": 118024, "kg_dh": 52322, "dh": 24}], "proyeccion": {"mes": 4, "mes_nombre": "Abr", "dh_total": 24, "dh_transcurridos": 6, "kg_parcial": 1255731, "rec_parcial": 118024, "proy_kg": 5022923, "pct_recorte": 9.4, "var_vs_mes_anterior": -24.5, "var_vs_mmaa": 4.6, "mes_anterior_nombre": "Mar", "kg_mes_anterior": 6651780, "kg_mmaa": 4802756}, "yoy_canal": [{"canal": "Cadena Supermercados", "mes": 1, "kg_ant": 149077, "kg_act": 214603, "var": 44.0}, {"canal": "Cadena Supermercados", "mes": 2, "kg_ant": 148539, "kg_act": 226597, "var": 52.6}, {"canal": "Cadena Supermercados", "mes": 3, "kg_ant": 137130, "kg_act": 191821, "var": 39.9}, {"canal": "Cadenas Regionales", "mes": 1, "kg_ant": 941, "kg_act": 1739, "var": 84.9}, {"canal": "Cadenas Regionales", "mes": 2, "kg_ant": 815, "kg_act": 753, "var": -7.7}, {"canal": "Cadenas Regionales", "mes": 3, "kg_ant": 1051, "kg_act": 1395, "var": 32.8}, {"canal": "Digital", "mes": 1, "kg_ant": 202905, "kg_act": 547486, "var": 169.8}, {"canal": "Digital", "mes": 2, "kg_ant": 252837, "kg_act": 805794, "var": 218.7}, {"canal": "Digital", "mes": 3, "kg_ant": 315932, "kg_act": 699864, "var": 121.5}, {"canal": "Distribuidores", "mes": 1, "kg_ant": 1388367, "kg_act": 2335161, "var": 68.2}, {"canal": "Distribuidores", "mes": 2, "kg_ant": 1496162, "kg_act": 2081732, "var": 39.1}, {"canal": "Distribuidores", "mes": 3, "kg_ant": 1309588, "kg_act": 2351175, "var": 79.5}, {"canal": "Distribuidores B", "mes": 1, "kg_ant": 23451, "kg_act": 63116, "var": 169.1}, {"canal": "Distribuidores B", "mes": 2, "kg_ant": 31006, "kg_act": 61467, "var": 98.2}, {"canal": "Distribuidores B", "mes": 3, "kg_ant": 31242, "kg_act": 72058, "var": 130.6}, {"canal": "EMPLEADOS", "mes": 1, "kg_ant": 90, "kg_act": 125, "var": 39.5}, {"canal": "EMPLEADOS", "mes": 2, "kg_ant": 72, "kg_act": 99, "var": 38.2}, {"canal": "EMPLEADOS", "mes": 3, "kg_ant": 83, "kg_act": 121, "var": 45.4}, {"canal": "Grandes Cadenas Nacionales", "mes": 1, "kg_ant": 1491450, "kg_act": 731850, "var": -50.9}, {"canal": "Grandes Cadenas Nacionales", "mes": 2, "kg_ant": 669326, "kg_act": 951378, "var": 42.1}, {"canal": "Grandes Cadenas Nacionales", "mes": 3, "kg_ant": 1223130, "kg_act": 953446, "var": -22.0}, {"canal": "HoReCa Directo - Institucionales", "mes": 1, "kg_ant": 614823, "kg_act": 1050253, "var": 70.8}, {"canal": "HoReCa Directo - Institucionales", "mes": 2, "kg_ant": 835078, "kg_act": 1445640, "var": 73.1}, {"canal": "HoReCa Directo - Institucionales", "mes": 3, "kg_ant": 1026486, "kg_act": 1764368, "var": 71.9}, {"canal": "Mayoristas", "mes": 1, "kg_ant": 177274, "kg_act": 426500, "var": 140.6}, {"canal": "Mayoristas", "mes": 2, "kg_ant": 253961, "kg_act": 447396, "var": 76.2}, {"canal": "Mayoristas", "mes": 3, "kg_ant": 209801, "kg_act": 452285, "var": 115.6}, {"canal": "Supermercados", "mes": 1, "kg_ant": 11815, "kg_act": 36876, "var": 212.1}, {"canal": "Supermercados", "mes": 2, "kg_ant": 19783, "kg_act": 26392, "var": 33.4}, {"canal": "Supermercados", "mes": 3, "kg_ant": 11691, "kg_act": 28083, "var": 140.2}, {"canal": "Tradicional minorista", "mes": 1, "kg_ant": 53314, "kg_act": 96806, "var": 81.6}, {"canal": "Tradicional minorista", "mes": 2, "kg_ant": 128989, "kg_act": 83826, "var": -35.0}, {"canal": "Tradicional minorista", "mes": 3, "kg_ant": 84235, "kg_act": 137165, "var": 62.8}], "recorte_canal": [{"canal": "Cadena Supermercados", "mes": 1, "kg": 214603, "rec": 30497, "pct": 14.2}, {"canal": "Cadena Supermercados", "mes": 2, "kg": 226597, "rec": 25761, "pct": 11.4}, {"canal": "Cadena Supermercados", "mes": 3, "kg": 191821, "rec": 29117, "pct": 15.2}, {"canal": "Cadena Supermercados", "mes": 4, "kg": 70657, "rec": 2045, "pct": 2.9}, {"canal": "Cadenas Regionales", "mes": 1, "kg": 1739, "rec": 1069, "pct": 61.5}, {"canal": "Cadenas Regionales", "mes": 2, "kg": 753, "rec": 223, "pct": 29.6}, {"canal": "Cadenas Regionales", "mes": 3, "kg": 1395, "rec": 571, "pct": 40.9}, {"canal": "Cadenas Regionales", "mes": 4, "kg": 154, "rec": 13, "pct": 8.6}, {"canal": "Digital", "mes": 1, "kg": 547486, "rec": 41851, "pct": 7.6}, {"canal": "Digital", "mes": 2, "kg": 805794, "rec": 45094, "pct": 5.6}, {"canal": "Digital", "mes": 3, "kg": 699864, "rec": 40227, "pct": 5.7}, {"canal": "Digital", "mes": 4, "kg": 169485, "rec": 1889, "pct": 1.1}, {"canal": "Distribuidores", "mes": 1, "kg": 2335161, "rec": 377768, "pct": 16.2}, {"canal": "Distribuidores", "mes": 2, "kg": 2081732, "rec": 460678, "pct": 22.1}, {"canal": "Distribuidores", "mes": 3, "kg": 2351175, "rec": 499399, "pct": 21.2}, {"canal": "Distribuidores", "mes": 4, "kg": 452734, "rec": 27019, "pct": 6.0}, {"canal": "Distribuidores B", "mes": 1, "kg": 63116, "rec": 12859, "pct": 20.4}, {"canal": "Distribuidores B", "mes": 2, "kg": 61467, "rec": 7036, "pct": 11.4}, {"canal": "Distribuidores B", "mes": 3, "kg": 72058, "rec": 31739, "pct": 44.0}, {"canal": "Distribuidores B", "mes": 4, "kg": 11451, "rec": 4325, "pct": 37.8}, {"canal": "EMPLEADOS", "mes": 1, "kg": 125, "rec": 0, "pct": 0.0}, {"canal": "EMPLEADOS", "mes": 2, "kg": 99, "rec": 0, "pct": 0.0}, {"canal": "EMPLEADOS", "mes": 3, "kg": 121, "rec": 0, "pct": 0.0}, {"canal": "EMPLEADOS", "mes": 4, "kg": 84, "rec": 0, "pct": 0.0}, {"canal": "Grandes Cadenas Nacionales", "mes": 1, "kg": 731850, "rec": 145870, "pct": 19.9}, {"canal": "Grandes Cadenas Nacionales", "mes": 2, "kg": 951378, "rec": 95896, "pct": 10.1}, {"canal": "Grandes Cadenas Nacionales", "mes": 3, "kg": 953446, "rec": 189845, "pct": 19.9}, {"canal": "Grandes Cadenas Nacionales", "mes": 4, "kg": 201236, "rec": 71993, "pct": 35.8}, {"canal": "HoReCa Directo - Institucionales", "mes": 1, "kg": 1050253, "rec": 12850, "pct": 1.2}, {"canal": "HoReCa Directo - Institucionales", "mes": 2, "kg": 1445640, "rec": 84771, "pct": 5.9}, {"canal": "HoReCa Directo - Institucionales", "mes": 3, "kg": 1764368, "rec": 116736, "pct": 6.6}, {"canal": "HoReCa Directo - Institucionales", "mes": 4, "kg": 255764, "rec": 945, "pct": 0.4}, {"canal": "Mayoristas", "mes": 1, "kg": 426500, "rec": 68550, "pct": 16.1}, {"canal": "Mayoristas", "mes": 2, "kg": 447396, "rec": 91166, "pct": 20.4}, {"canal": "Mayoristas", "mes": 3, "kg": 452285, "rec": 68923, "pct": 15.2}, {"canal": "Mayoristas", "mes": 4, "kg": 70272, "rec": 3860, "pct": 5.5}, {"canal": "Supermercados", "mes": 1, "kg": 36876, "rec": 4925, "pct": 13.4}, {"canal": "Supermercados", "mes": 2, "kg": 26392, "rec": 803, "pct": 3.0}, {"canal": "Supermercados", "mes": 3, "kg": 28083, "rec": 1306, "pct": 4.6}, {"canal": "Supermercados", "mes": 4, "kg": 99, "rec": 18, "pct": 17.7}, {"canal": "Tradicional minorista", "mes": 1, "kg": 96806, "rec": 1782, "pct": 1.8}, {"canal": "Tradicional minorista", "mes": 2, "kg": 83826, "rec": 313, "pct": 0.4}, {"canal": "Tradicional minorista", "mes": 3, "kg": 137165, "rec": 2934, "pct": 2.1}, {"canal": "Tradicional minorista", "mes": 4, "kg": 23794, "rec": 94, "pct": 0.4}], "recorte_rubro": [{"rubro": "ALIMENTA", "mes": 1, "kg": 1786, "rec": 56, "pct": 3.1}, {"rubro": "ALIMENTA", "mes": 2, "kg": 2064, "rec": 0, "pct": 0.0}, {"rubro": "ALIMENTA", "mes": 3, "kg": 1568, "rec": 0, "pct": 0.0}, {"rubro": "ALIMENTA", "mes": 4, "kg": 1024, "rec": 0, "pct": 0.0}, {"rubro": "DULCE DE LECHE TREGAR", "mes": 1, "kg": 14522, "rec": 125, "pct": 0.9}, {"rubro": "DULCE DE LECHE TREGAR", "mes": 2, "kg": 31740, "rec": 1488, "pct": 4.7}, {"rubro": "DULCE DE LECHE TREGAR", "mes": 3, "kg": 29698, "rec": 1452, "pct": 4.9}, {"rubro": "DULCE DE LECHE TREGAR", "mes": 4, "kg": 6480, "rec": 0, "pct": 0.0}, {"rubro": "FRESCOS", "mes": 1, "kg": 1665248, "rec": 467876, "pct": 28.1}, {"rubro": "FRESCOS", "mes": 2, "kg": 1789666, "rec": 173749, "pct": 9.7}, {"rubro": "FRESCOS", "mes": 3, "kg": 1870327, "rec": 206686, "pct": 11.1}, {"rubro": "FRESCOS", "mes": 4, "kg": 286533, "rec": 10494, "pct": 3.7}, {"rubro": "LECHES", "mes": 1, "kg": 3524432, "rec": 220470, "pct": 6.3}, {"rubro": "LECHES", "mes": 2, "kg": 4001278, "rec": 605038, "pct": 15.1}, {"rubro": "LECHES", "mes": 3, "kg": 4414604, "rec": 635824, "pct": 14.4}, {"rubro": "LECHES", "mes": 4, "kg": 896142, "rec": 23940, "pct": 2.7}, {"rubro": "QUESOS TREGAR", "mes": 1, "kg": 298523, "rec": 52646, "pct": 17.6}, {"rubro": "QUESOS TREGAR", "mes": 2, "kg": 306321, "rec": 45134, "pct": 14.7}, {"rubro": "QUESOS TREGAR", "mes": 3, "kg": 335577, "rec": 201227, "pct": 60.0}, {"rubro": "QUESOS TREGAR", "mes": 4, "kg": 65552, "rec": 83590, "pct": 127.5}, {"rubro": "VARIOS", "mes": 1, "kg": 3, "rec": 0, "pct": 0.0}, {"rubro": "VARIOS", "mes": 2, "kg": 4, "rec": 0, "pct": 0.0}, {"rubro": "VARIOS", "mes": 3, "kg": 6, "rec": 0, "pct": 0.0}], "recorte_linea": [{"linea": "ARROZ CON LECHE", "mes": 1, "kg": 75856, "rec": 10008, "pct": 13.2}, {"linea": "ARROZ CON LECHE", "mes": 2, "kg": 73454, "rec": 10149, "pct": 13.8}, {"linea": "ARROZ CON LECHE", "mes": 3, "kg": 91490, "rec": 4939, "pct": 5.4}, {"linea": "ARROZ CON LECHE", "mes": 4, "kg": 14000, "rec": 310, "pct": 2.2}, {"linea": "CREMAS REFRIGERADAS", "mes": 1, "kg": 136588, "rec": 30391, "pct": 22.2}, {"linea": "CREMAS REFRIGERADAS", "mes": 2, "kg": 129828, "rec": 1727, "pct": 1.3}, {"linea": "CREMAS REFRIGERADAS", "mes": 3, "kg": 151193, "rec": 49802, "pct": 32.9}, {"linea": "CREMAS REFRIGERADAS", "mes": 4, "kg": 29436, "rec": 3001, "pct": 10.2}, {"linea": "DESHIDRATADOS", "mes": 1, "kg": 1786, "rec": 56, "pct": 3.1}, {"linea": "DESHIDRATADOS", "mes": 2, "kg": 2064, "rec": 0, "pct": 0.0}, {"linea": "DESHIDRATADOS", "mes": 3, "kg": 1568, "rec": 0, "pct": 0.0}, {"linea": "DESHIDRATADOS", "mes": 4, "kg": 1024, "rec": 0, "pct": 0.0}, {"linea": "DULCE DE LECHE CLÁSICO", "mes": 1, "kg": 14522, "rec": 125, "pct": 0.9}, {"linea": "DULCE DE LECHE CLÁSICO", "mes": 2, "kg": 31740, "rec": 1488, "pct": 4.7}, {"linea": "DULCE DE LECHE CLÁSICO", "mes": 3, "kg": 29698, "rec": 1452, "pct": 4.9}, {"linea": "DULCE DE LECHE CLÁSICO", "mes": 4, "kg": 6480, "rec": 0, "pct": 0.0}, {"linea": "LECHES UAT", "mes": 1, "kg": 3524432, "rec": 220470, "pct": 6.3}, {"linea": "LECHES UAT", "mes": 2, "kg": 4001278, "rec": 605038, "pct": 15.1}, {"linea": "LECHES UAT", "mes": 3, "kg": 4414604, "rec": 635824, "pct": 14.4}, {"linea": "LECHES UAT", "mes": 4, "kg": 896142, "rec": 23940, "pct": 2.7}, {"linea": "QUESO RALLADO", "mes": 1, "kg": 14995, "rec": 14, "pct": 0.1}, {"linea": "QUESO RALLADO", "mes": 2, "kg": 9187, "rec": 66, "pct": 0.7}, {"linea": "QUESO RALLADO", "mes": 3, "kg": 19024, "rec": 320, "pct": 1.7}, {"linea": "QUESO RALLADO", "mes": 4, "kg": 6196, "rec": 0, "pct": 0.0}, {"linea": "QUESOS BLANDOS", "mes": 1, "kg": 87066, "rec": 3530, "pct": 4.1}, {"linea": "QUESOS BLANDOS", "mes": 2, "kg": 93731, "rec": 22815, "pct": 24.3}, {"linea": "QUESOS BLANDOS", "mes": 3, "kg": 112201, "rec": 52870, "pct": 47.1}, {"linea": "QUESOS BLANDOS", "mes": 4, "kg": 17888, "rec": 7129, "pct": 39.9}, {"linea": "QUESOS CREMAS", "mes": 1, "kg": 137105, "rec": 8193, "pct": 6.0}, {"linea": "QUESOS CREMAS", "mes": 2, "kg": 132721, "rec": 31760, "pct": 23.9}, {"linea": "QUESOS CREMAS", "mes": 3, "kg": 168215, "rec": 54448, "pct": 32.4}, {"linea": "QUESOS CREMAS", "mes": 4, "kg": 28236, "rec": 786, "pct": 2.8}, {"linea": "QUESOS DUROS", "mes": 1, "kg": 782, "rec": 6297, "pct": 804.9}, {"linea": "QUESOS DUROS", "mes": 2, "kg": 558, "rec": 5918, "pct": 1060.3}, {"linea": "QUESOS DUROS", "mes": 3, "kg": 187, "rec": 7846, "pct": 4204.8}, {"linea": "QUESOS DUROS", "mes": 4, "kg": 591, "rec": 1231, "pct": 208.2}, {"linea": "QUESOS FRACCIONADOS", "mes": 1, "kg": 89875, "rec": 7869, "pct": 8.8}, {"linea": "QUESOS FRACCIONADOS", "mes": 2, "kg": 81648, "rec": 2936, "pct": 3.6}, {"linea": "QUESOS FRACCIONADOS", "mes": 3, "kg": 95180, "rec": 25443, "pct": 26.7}, {"linea": "QUESOS FRACCIONADOS", "mes": 4, "kg": 17389, "rec": 2374, "pct": 13.7}, {"linea": "QUESOS SEMIDUROS", "mes": 1, "kg": 105805, "rec": 34936, "pct": 33.0}, {"linea": "QUESOS SEMIDUROS", "mes": 2, "kg": 121197, "rec": 13398, "pct": 11.1}, {"linea": "QUESOS SEMIDUROS", "mes": 3, "kg": 108985, "rec": 114748, "pct": 105.3}, {"linea": "QUESOS SEMIDUROS", "mes": 4, "kg": 23487, "rec": 72856, "pct": 310.2}, {"linea": "QUESOS UNTABLES", "mes": 1, "kg": 21645, "rec": 4875, "pct": 22.5}, {"linea": "QUESOS UNTABLES", "mes": 2, "kg": 21872, "rec": 43, "pct": 0.2}, {"linea": "QUESOS UNTABLES", "mes": 3, "kg": 27602, "rec": 878, "pct": 3.2}, {"linea": "QUESOS UNTABLES", "mes": 4, "kg": 3039, "rec": 2, "pct": 0.1}, {"linea": "RICOTTA", "mes": 1, "kg": 23243, "rec": 3182, "pct": 13.7}, {"linea": "RICOTTA", "mes": 2, "kg": 29456, "rec": 2478, "pct": 8.4}, {"linea": "RICOTTA", "mes": 3, "kg": 34398, "rec": 2006, "pct": 5.8}, {"linea": "RICOTTA", "mes": 4, "kg": 7828, "rec": 171, "pct": 2.2}, {"linea": "VARIOS", "mes": 1, "kg": 3, "rec": 0, "pct": 0.0}, {"linea": "VARIOS", "mes": 2, "kg": 4, "rec": 0, "pct": 0.0}, {"linea": "VARIOS", "mes": 3, "kg": 6, "rec": 0, "pct": 0.0}, {"linea": "YOGURES BEBIBLES", "mes": 1, "kg": 714094, "rec": 347020, "pct": 48.6}, {"linea": "YOGURES BEBIBLES", "mes": 2, "kg": 794732, "rec": 63277, "pct": 8.0}, {"linea": "YOGURES BEBIBLES", "mes": 3, "kg": 683558, "rec": 46235, "pct": 6.8}, {"linea": "YOGURES BEBIBLES", "mes": 4, "kg": 109123, "rec": 2770, "pct": 2.5}, {"linea": "YOGURES POTES", "mes": 1, "kg": 556717, "rec": 64207, "pct": 11.5}, {"linea": "YOGURES POTES", "mes": 2, "kg": 607603, "rec": 64316, "pct": 10.6}, {"linea": "YOGURES POTES", "mes": 3, "kg": 713871, "rec": 48379, "pct": 6.8}, {"linea": "YOGURES POTES", "mes": 4, "kg": 94870, "rec": 3454, "pct": 3.6}], "recorte_suc_emision": [{"suc_emision": "CABA", "mes": 1, "kg": 936241, "rec": 313843, "pct": 33.5}, {"suc_emision": "CABA", "mes": 2, "kg": 939027, "rec": 323345, "pct": 34.4}, {"suc_emision": "CABA", "mes": 3, "kg": 1094526, "rec": 427164, "pct": 39.0}, {"suc_emision": "CABA", "mes": 4, "kg": 177855, "rec": 18754, "pct": 10.5}, {"suc_emision": "Casa Central", "mes": 1, "kg": 4568274, "rec": 427991, "pct": 9.4}, {"suc_emision": "Casa Central", "mes": 2, "kg": 5192046, "rec": 502063, "pct": 9.7}, {"suc_emision": "Casa Central", "mes": 3, "kg": 5557253, "rec": 618266, "pct": 11.1}, {"suc_emision": "Casa Central", "mes": 4, "kg": 1077876, "rec": 99270, "pct": 9.2}], "cruce_canal_linea": [{"canal": "Grandes Cadenas Nacionales", "linea": "QUESOS SEMIDUROS", "kg": 13878, "rec": 66947, "pct": 482.4}, {"canal": "Grandes Cadenas Nacionales", "linea": "QUESOS BLANDOS", "kg": 17453, "rec": 58802, "pct": 336.9}, {"canal": "Mayoristas", "linea": "YOGURES BEBIBLES", "kg": 62094, "rec": 33647, "pct": 54.2}, {"canal": "Mayoristas", "linea": "YOGURES POTES", "kg": 47445, "rec": 18157, "pct": 38.3}, {"canal": "Grandes Cadenas Nacionales", "linea": "CREMAS REFRIGERADAS", "kg": 107386, "rec": 33109, "pct": 30.8}, {"canal": "Grandes Cadenas Nacionales", "linea": "YOGURES BEBIBLES", "kg": 498717, "rec": 148441, "pct": 29.8}, {"canal": "Distribuidores B", "linea": "LECHES UAT", "kg": 141607, "rec": 40240, "pct": 28.4}, {"canal": "Cadena Supermercados", "linea": "QUESOS BLANDOS", "kg": 21512, "rec": 5982, "pct": 27.8}, {"canal": "Mayoristas", "linea": "QUESOS CREMAS", "kg": 13723, "rec": 3783, "pct": 27.6}, {"canal": "Digital", "linea": "QUESOS CREMAS", "kg": 26648, "rec": 6904, "pct": 25.9}, {"canal": "Distribuidores", "linea": "LECHES UAT", "kg": 3748431, "rec": 948256, "pct": 25.3}, {"canal": "Cadena Supermercados", "linea": "YOGURES POTES", "kg": 67381, "rec": 16985, "pct": 25.2}, {"canal": "Digital", "linea": "YOGURES BEBIBLES", "kg": 118309, "rec": 26276, "pct": 22.2}, {"canal": "Cadena Supermercados", "linea": "QUESOS CREMAS", "kg": 15479, "rec": 3412, "pct": 22.0}, {"canal": "Distribuidores", "linea": "QUESOS SEMIDUROS", "kg": 192078, "rec": 40951, "pct": 21.3}], "portafolio": [{"canal": "Distribuidores", "skus_activos": 93, "total_skus": 117, "amplitud": 79.5, "equilibrio": 0.679, "kg_total": 6768069, "composicion": {"CREMAS REFRIGERADAS": 3.3, "LECHES UAT": 55.4, "QUESOS BLANDOS": 3.1, "QUESOS CREMAS": 2.1, "QUESOS SEMIDUROS": 2.8, "YOGURES BEBIBLES": 20.6, "YOGURES POTES": 10.4}}, {"canal": "HoReCa Directo - Institucionales", "skus_activos": 91, "total_skus": 117, "amplitud": 77.8, "equilibrio": 0.107, "kg_total": 4260260, "composicion": {"CREMAS REFRIGERADAS": 1.3, "LECHES UAT": 94.8, "QUESOS SEMIDUROS": 1.9, "YOGURES POTES": 1.5}}, {"canal": "Grandes Cadenas Nacionales", "skus_activos": 80, "total_skus": 117, "amplitud": 68.4, "equilibrio": 0.873, "kg_total": 2636673, "composicion": {"ARROZ CON LECHE": 6.3, "CREMAS REFRIGERADAS": 4.1, "LECHES UAT": 22.2, "QUESO RALLADO": 1.2, "QUESOS CREMAS": 8.7, "QUESOS FRACCIONADOS": 3.5, "RICOTTA": 2.4, "YOGURES BEBIBLES": 18.9, "YOGURES POTES": 30.7}}, {"canal": "Digital", "skus_activos": 73, "total_skus": 117, "amplitud": 62.4, "equilibrio": 0.456, "kg_total": 2053144, "composicion": {"LECHES UAT": 75.1, "QUESOS CREMAS": 1.3, "QUESOS FRACCIONADOS": 7.5, "YOGURES BEBIBLES": 5.8, "YOGURES POTES": 7.9}}, {"canal": "Mayoristas", "skus_activos": 92, "total_skus": 117, "amplitud": 78.6, "equilibrio": 0.25, "kg_total": 1326181, "composicion": {"LECHES UAT": 87.3, "QUESOS CREMAS": 1.0, "YOGURES BEBIBLES": 4.7, "YOGURES POTES": 3.6}}, {"canal": "Cadena Supermercados", "skus_activos": 91, "total_skus": 117, "amplitud": 77.8, "equilibrio": 0.669, "kg_total": 633021, "composicion": {"ARROZ CON LECHE": 1.0, "CREMAS REFRIGERADAS": 1.5, "DULCE DE LECHE CLÁSICO": 2.4, "LECHES UAT": 57.8, "QUESOS BLANDOS": 3.4, "QUESOS CREMAS": 2.4, "QUESOS FRACCIONADOS": 1.8, "QUESOS SEMIDUROS": 2.8, "YOGURES BEBIBLES": 15.2, "YOGURES POTES": 10.6}}, {"canal": "Tradicional minorista", "skus_activos": 82, "total_skus": 117, "amplitud": 70.1, "equilibrio": 0.273, "kg_total": 317797, "composicion": {"LECHES UAT": 86.1, "QUESOS CREMAS": 1.7, "YOGURES BEBIBLES": 4.2, "YOGURES POTES": 6.6}}, {"canal": "Distribuidores B", "skus_activos": 82, "total_skus": 117, "amplitud": 70.1, "equilibrio": 0.492, "kg_total": 196641, "composicion": {"CREMAS REFRIGERADAS": 1.0, "LECHES UAT": 72.0, "QUESOS BLANDOS": 6.9, "QUESOS CREMAS": 1.2, "QUESOS SEMIDUROS": 12.5, "YOGURES BEBIBLES": 3.0, "YOGURES POTES": 2.8}}, {"canal": "Supermercados", "skus_activos": 75, "total_skus": 117, "amplitud": 64.1, "equilibrio": 0.106, "kg_total": 91350, "composicion": {"LECHES UAT": 94.9, "YOGURES POTES": 2.6}}, {"canal": "Cadenas Regionales", "skus_activos": 58, "total_skus": 117, "amplitud": 49.6, "equilibrio": 0.857, "kg_total": 3887, "composicion": {"ARROZ CON LECHE": 4.7, "CREMAS REFRIGERADAS": 5.7, "LECHES UAT": 4.9, "QUESOS CREMAS": 10.5, "QUESOS FRACCIONADOS": 8.0, "QUESOS UNTABLES": 1.4, "RICOTTA": 1.9, "YOGURES BEBIBLES": 31.7, "YOGURES POTES": 30.7}}, {"canal": "EMPLEADOS", "skus_activos": 13, "total_skus": 117, "amplitud": 11.1, "equilibrio": 0.724, "kg_total": 345, "composicion": {"CREMAS REFRIGERADAS": 21.9, "LECHES UAT": 55.6, "QUESOS CREMAS": 14.0, "YOGURES BEBIBLES": 4.7, "YOGURES POTES": 2.3}}, {"canal": "Sin Especificar", "skus_activos": 0, "total_skus": 117, "amplitud": 0.0, "equilibrio": 0, "kg_total": 0, "composicion": {}}], "kg_dia_habil": [{"mes": 1, "year": 2025, "kg_dh": 158212, "kg_total": 4113509, "dh": 26}, {"mes": 2, "year": 2025, "kg_dh": 174390, "kg_total": 3836569, "dh": 22}, {"mes": 3, "year": 2025, "kg_dh": 181265, "kg_total": 4350367, "dh": 24}, {"mes": 4, "year": 2025, "kg_dh": 200115, "kg_total": 4802756, "dh": 24}, {"mes": 5, "year": 2025, "kg_dh": 214666, "kg_total": 5151989, "dh": 24}, {"mes": 6, "year": 2025, "kg_dh": 191571, "kg_total": 4597702, "dh": 24}, {"mes": 7, "year": 2025, "kg_dh": 249843, "kg_total": 6495909, "dh": 26}, {"mes": 8, "year": 2025, "kg_dh": 241716, "kg_total": 6042897, "dh": 25}, {"mes": 9, "year": 2025, "kg_dh": 262642, "kg_total": 6828699, "dh": 26}, {"mes": 10, "year": 2025, "kg_dh": 281738, "kg_total": 7325197, "dh": 26}, {"mes": 11, "year": 2025, "kg_dh": 262971, "kg_total": 6311312, "dh": 24}, {"mes": 12, "year": 2025, "kg_dh": 281660, "kg_total": 7041511, "dh": 25}, {"mes": 1, "year": 2026, "kg_dh": 211712, "kg_total": 5504515, "dh": 26}, {"mes": 2, "year": 2026, "kg_dh": 278685, "kg_total": 6131073, "dh": 22}, {"mes": 3, "year": 2026, "kg_dh": 277157, "kg_total": 6651780, "dh": 24}, {"mes": 4, "year": 2026, "kg_dh": 52322, "kg_total": 1255731, "dh": 24}], "anomalias": [{"nivel": 3, "tipo": "Recorte alto canal x linea", "detalle": "Grandes Cadenas Nacionales + QUESOS SEMIDUROS: 482.4% recorte", "dimension": "Grandes Cadenas Nacionales | QUESOS SEMIDUROS", "pct": 482.4, "severidad": "alta"}, {"nivel": 3, "tipo": "Recorte alto canal x linea", "detalle": "Grandes Cadenas Nacionales + QUESOS BLANDOS: 336.9% recorte", "dimension": "Grandes Cadenas Nacionales | QUESOS BLANDOS", "pct": 336.9, "severidad": "alta"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "QUESOS SEMIDUROS - Mar: 105.3% recorte (114,748 kg de 108,985 kg)", "dimension": "QUESOS SEMIDUROS", "mes": 3, "pct": 105.3, "severidad": "alta"}, {"nivel": 2, "tipo": "Recorte alto canal x rubro", "detalle": "Grandes Cadenas Nacionales + QUESOS TREGAR: 81.9% recorte acumulado", "dimension": "Grandes Cadenas Nacionales | QUESOS TREGAR", "pct": 81.9, "severidad": "alta"}, {"nivel": 1, "tipo": "Recorte alto en rubro", "detalle": "QUESOS TREGAR - Mar: 60.0% recorte (201,227 kg de 335,577 kg)", "dimension": "QUESOS TREGAR", "mes": 3, "pct": 60.0, "severidad": "alta"}, {"nivel": 3, "tipo": "Recorte alto canal x linea", "detalle": "Mayoristas + YOGURES BEBIBLES: 54.2% recorte", "dimension": "Mayoristas | YOGURES BEBIBLES", "pct": 54.2, "severidad": "alta"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "YOGURES BEBIBLES - Ene: 48.6% recorte (347,020 kg de 714,094 kg)", "dimension": "YOGURES BEBIBLES", "mes": 1, "pct": 48.6, "severidad": "alta"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "QUESOS BLANDOS - Mar: 47.1% recorte (52,870 kg de 112,201 kg)", "dimension": "QUESOS BLANDOS", "mes": 3, "pct": 47.1, "severidad": "alta"}, {"nivel": 2, "tipo": "Recorte alto canal x rubro", "detalle": "Mayoristas + FRESCOS: 41.5% recorte acumulado", "dimension": "Mayoristas | FRESCOS", "pct": 41.5, "severidad": "alta"}, {"nivel": 3, "tipo": "Recorte alto canal x linea", "detalle": "Mayoristas + YOGURES POTES: 38.3% recorte", "dimension": "Mayoristas | YOGURES POTES", "pct": 38.3, "severidad": "media"}, {"nivel": 2, "tipo": "Recorte alto por sucursal emision", "detalle": "CABA: 35.8% recorte global (1,064,352 kg)", "dimension": "CABA", "pct": 35.8, "severidad": "alta"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "QUESOS SEMIDUROS - Ene: 33.0% recorte (34,936 kg de 105,805 kg)", "dimension": "QUESOS SEMIDUROS", "mes": 1, "pct": 33.0, "severidad": "media"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "CREMAS REFRIGERADAS - Mar: 32.9% recorte (49,802 kg de 151,193 kg)", "dimension": "CREMAS REFRIGERADAS", "mes": 3, "pct": 32.9, "severidad": "media"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "QUESOS CREMAS - Mar: 32.4% recorte (54,448 kg de 168,215 kg)", "dimension": "QUESOS CREMAS", "mes": 3, "pct": 32.4, "severidad": "media"}, {"nivel": 1, "tipo": "Recorte alto en rubro", "detalle": "FRESCOS - Ene: 28.1% recorte (467,876 kg de 1,665,248 kg)", "dimension": "FRESCOS", "mes": 1, "pct": 28.1, "severidad": "media"}, {"nivel": 1, "tipo": "Recorte alto en linea", "detalle": "QUESOS FRACCIONADOS - Mar: 26.7% recorte (25,443 kg de 95,180 kg)", "dimension": "QUESOS FRACCIONADOS", "mes": 3, "pct": 26.7, "severidad": "media"}], "narrativa": "Sell-in acumulado (Ene, Feb, Mar 2026): 18.3M kg (+48.7% vs 2025).\nRecorte acumulado: 14.3%.\nProyeccion Abr: 5.0M kg (-24.5% vs Mar, +4.6% vs MMAA).\nSe detectaron 10 alertas de severidad alta.\n  - Grandes Cadenas Nacionales + QUESOS SEMIDUROS: 482.4% recorte\n  - Grandes Cadenas Nacionales + QUESOS BLANDOS: 336.9% recorte\n  - QUESOS SEMIDUROS - Mar: 105.3% recorte (114,748 kg de 108,985 kg)\n  - Grandes Cadenas Nacionales + QUESOS TREGAR: 81.9% recorte acumulado\n  - QUESOS TREGAR - Mar: 60.0% recorte (201,227 kg de 335,577 kg)"};
+const MN = {1:'Ene',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+const fmt = n => n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3)+'K':Math.round(n).toString();
+const badge = p => p>20?'b-red':p>10?'b-amb':'b-grn';
+let charts = [];
+
+function showTab(i) {
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  charts.forEach(c=>c.destroy());
+  charts=[];
+  const el=document.getElementById('content');
+  el.innerHTML='';
+  [tab0,tab1,tab2,tab3,tab4,tab5][i](el);
+}
+
+function makeChart(container, cfg) {
+  const wrap=document.createElement('div');
+  wrap.className='chart-wrap';
+  const canvas=document.createElement('canvas');
+  wrap.appendChild(canvas);
+  container.appendChild(wrap);
+  const c=new Chart(canvas,{...cfg,options:{...cfg.options,responsive:true,maintainAspectRatio:false,plugins:{...cfg.options?.plugins,legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:Object.fromEntries(Object.entries(cfg.options?.scales||{}).map(([k,v])=>[k,{...v,ticks:{...v?.ticks,color:'#94a3b8',font:{size:10}},grid:{...v?.grid,color:'#33415533'}}]))}});
+  charts.push(c);
+  return c;
+}
+
+// ── TAB 0: RESUMEN ──
+function tab0(el) {
+  const p=D.proyeccion||{};
+  const mOk=D.meta.meses_completos;
+  const mAct=D.mensual.filter(d=>d.year===2026&&mOk.includes(d.mes));
+  const mAnt=D.mensual.filter(d=>d.year===2025&&mOk.includes(d.mes));
+  const kgAct=mAct.reduce((s,d)=>s+d.kg,0);
+  const recAct=mAct.reduce((s,d)=>s+d.rec,0);
+  const pctRec=kgAct>0?(recAct/kgAct*100).toFixed(1):0;
+
+  el.innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">Proyección ${p.mes_nombre||''}</div><div class="kpi-v">${fmt(p.proy_kg||0)} kg</div><div class="kpi-d">Avance: ${fmt(p.kg_parcial||0)} (${p.dh_transcurridos||0} de ${p.dh_total||0} DH)</div></div>
+    <div class="kpi"><div class="kpi-l">% Recorte acumulado</div><div class="kpi-v">${pctRec}%</div><div class="kpi-d ${pctRec>12?'down':'up'}">Meses completos: ${mOk.map(m=>MN[m]).join(', ')}</div></div>
+    <div class="kpi"><div class="kpi-l">Proy ${p.mes_nombre||''} vs ${p.mes_anterior_nombre||''}</div><div class="kpi-v ${(p.var_vs_mes_anterior||0)>=0?'up':'down'}">${(p.var_vs_mes_anterior||0)>0?'+':''}${p.var_vs_mes_anterior||0}%</div><div class="kpi-d">${fmt(p.proy_kg||0)} vs ${fmt(p.kg_mes_anterior||0)} kg</div></div>
+    <div class="kpi"><div class="kpi-l">Proy ${p.mes_nombre||''} vs MMAA</div><div class="kpi-v ${(p.var_vs_mmaa||0)>=0?'up':'down'}">${(p.var_vs_mmaa||0)>0?'+':''}${p.var_vs_mmaa||0}%</div><div class="kpi-d">${fmt(p.proy_kg||0)} vs ${fmt(p.kg_mmaa||0)} kg</div></div>
+  </div>`;
+
+  // Gráfico barras mensual YoY
+  const card1=document.createElement('div');card1.className='card';
+  card1.innerHTML='<div class="card-t">Sell-in mensual 2025 vs 2026 (kg)</div><div class="card-s">Meses completos. Abril 2026 muestra proyección.</div>';
+  el.appendChild(card1);
+
+  const allM=[...new Set(D.mensual.map(d=>d.mes))].sort((a,b)=>a-b);
+  makeChart(card1,{
+    type:'bar',
+    data:{
+      labels:allM.map(m=>MN[m]),
+      datasets:[
+        {label:'2025',data:allM.map(m=>{const r=D.mensual.find(d=>d.mes===m&&d.year===2025);return r?r.kg:0}),backgroundColor:'#475569',borderRadius:4},
+        {label:'2026',data:allM.map(m=>{const r=D.mensual.find(d=>d.mes===m&&d.year===2026);return r?r.kg:0}),backgroundColor:'#2563eb',borderRadius:4}
+      ]
+    },
+    options:{scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v)}}}}
+  });
+
+  // Gráfico avance mes parcial
+  if(p.mes){
+    const card2=document.createElement('div');card2.className='card';
+    card2.innerHTML=`<div class="card-t">Avance ${p.mes_nombre} 2026</div><div class="card-s">Fórmula: avance ÷ ${p.dh_transcurridos} DH transcurridos × ${p.dh_total} DH del mes = ${fmt(p.proy_kg)} kg proyectados</div>`;
+    el.appendChild(card2);
+
+    const pctAvance=(p.dh_transcurridos/p.dh_total*100).toFixed(0);
+    const barDiv=document.createElement('div');
+    barDiv.style.cssText='height:40px;background:#334155;border-radius:8px;overflow:hidden;position:relative;margin:12px 0';
+    barDiv.innerHTML=`<div style="width:${pctAvance}%;height:100%;background:linear-gradient(90deg,#2563eb,#3b82f6);display:flex;align-items:center;padding-left:12px;color:#fff;font-size:13px;font-weight:600">${fmt(p.kg_parcial)} (${pctAvance}%)</div><div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:11px">Meta proy: ${fmt(p.proy_kg)}</div>`;
+    card2.appendChild(barDiv);
+  }
+}
+
+// ── TAB 1: EVOLUCIÓN POR CANAL ──
+function tab1(el) {
+  const mOk=D.meta.meses_completos;
+  const canales=[...new Set(D.yoy_canal.map(d=>d.canal))];
+
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<div class="card-t">Variación YoY por canal — meses completos (% kg)</div>';
+  let tbl='<table><thead><tr><th>Canal</th>'+mOk.map(m=>'<th>'+MN[m]+'</th>').join('')+'<th>Prom.</th></tr></thead><tbody>';
+  canales.forEach(c=>{
+    const rows=D.yoy_canal.filter(d=>d.canal===c);
+    const avg=rows.length?Math.round(rows.reduce((s,r)=>s+r.var,0)/rows.length*10)/10:0;
+    tbl+=`<tr><td style="font-weight:500;max-width:200px">${c}</td>`;
+    mOk.forEach(m=>{
+      const r=rows.find(x=>x.mes===m);
+      const v=r?r.var:0;
+      tbl+=`<td style="color:${v>=0?'#4ade80':'#f87171'};font-weight:600">${v>0?'+':''}${v}%</td>`;
+    });
+    tbl+=`<td style="font-weight:700;color:${avg>=0?'#4ade80':'#f87171'}">${avg>0?'+':''}${avg}%</td></tr>`;
+  });
+  tbl+='</tbody></table>';
+  card.innerHTML+=tbl;
+  el.appendChild(card);
+
+  // Mix de canales
+  const card2=document.createElement('div');card2.className='card';
+  card2.innerHTML='<div class="card-t">Evolución mensual por canal (kg)</div>';
+  el.appendChild(card2);
+  const colors=['#2563eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+  const topCanales=canales.sort((a,b)=>{
+    const ka=D.yoy_canal.filter(d=>d.canal===a).reduce((s,r)=>s+r.kg_act,0);
+    const kb=D.yoy_canal.filter(d=>d.canal===b).reduce((s,r)=>s+r.kg_act,0);
+    return kb-ka;
+  }).slice(0,8);
+  const allM=[...new Set(D.mensual.filter(d=>d.year===2026).map(d=>d.mes))].sort((a,b)=>a-b);
+  const datasets=topCanales.map((c,i)=>{
+    const cData=D.recorte_canal.filter(d=>d.canal===c);
+    return {label:c,data:allM.map(m=>{const r=cData.find(d=>d.mes===m);return r?r.kg:0}),backgroundColor:colors[i%8],borderRadius:3};
+  });
+  makeChart(card2,{type:'bar',data:{labels:allM.map(m=>MN[m]),datasets},options:{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>fmt(v)}}}}});
+}
+
+// ── TAB 2: RECORTES ──
+function tab2(el) {
+  const dims=[['canal','recorte_canal','Canal'],['rubro','recorte_rubro','Rubro'],['linea','recorte_linea','Línea'],['suc_emision','recorte_suc_emision','Sucursal emisión']];
+  const filterDiv=document.createElement('div');filterDiv.className='filters';
+  dims.forEach(([key,dataKey,label],i)=>{
+    const f=document.createElement('div');
+    f.className='flt'+(i===0?' on':'');
+    f.textContent='Por '+label;
+    f.onclick=()=>{
+      filterDiv.querySelectorAll('.flt').forEach(x=>x.classList.remove('on'));
+      f.classList.add('on');
+      renderRecorte(dataKey,key,label);
+    };
+    filterDiv.appendChild(f);
+  });
+  el.appendChild(filterDiv);
+
+  const contentDiv=document.createElement('div');contentDiv.id='recorte-content';
+  el.appendChild(contentDiv);
+
+  function renderRecorte(dataKey,key,label) {
+    const cd=document.getElementById('recorte-content');
+    cd.innerHTML='';
+    charts.forEach(c=>c.destroy());charts=[];
+    const rows=D[dataKey]||[];
+    const vals=[...new Set(rows.map(r=>r[key]))];
+    const meses=[...new Set(rows.map(r=>r.mes))].sort((a,b)=>a-b);
+
+    const card=document.createElement('div');card.className='card';
+    card.innerHTML=`<div class="card-t">% Recorte por ${label} — evolución mensual 2026</div>`;
+    let tbl='<table><thead><tr><th>'+label+'</th>'+meses.map(m=>'<th>'+MN[m]+'</th>').join('')+'<th>Acum.</th></tr></thead><tbody>';
+    vals.forEach(v=>{
+      const vRows=rows.filter(r=>r[key]===v);
+      const totKg=vRows.reduce((s,r)=>s+r.kg,0);
+      const totRec=vRows.reduce((s,r)=>s+r.rec,0);
+      const totPct=totKg>0?Math.round(totRec/totKg*1000)/10:0;
+      if(totKg<5000)return;
+      tbl+=`<tr><td style="font-weight:500;font-size:11px">${v}</td>`;
+      meses.forEach(m=>{
+        const r=vRows.find(x=>x.mes===m);
+        const p=r?r.pct:0;
+        tbl+=`<td><span class="badge ${badge(p)}">${p}%</span></td>`;
+      });
+      tbl+=`<td style="font-weight:700"><span class="badge ${badge(totPct)}">${totPct}%</span></td></tr>`;
+    });
+    tbl+='</tbody></table>';
+    card.innerHTML+=tbl;
+    cd.appendChild(card);
+  }
+
+  renderRecorte('recorte_canal','canal','Canal');
+
+  // Cruce canal × línea
+  if(D.cruce_canal_linea&&D.cruce_canal_linea.length) {
+    const card3=document.createElement('div');card3.className='card';
+    card3.innerHTML='<div class="card-t">Top combinaciones canal × línea con mayor recorte</div><div class="card-s">Meses completos, mínimo 10.000 kg</div>';
+    let t3='<table><thead><tr><th>Canal</th><th>Línea</th><th>Kg</th><th>Recorte</th><th>%</th></tr></thead><tbody>';
+    D.cruce_canal_linea.forEach(r=>{
+      t3+=`<tr><td>${r.canal}</td><td>${r.linea}</td><td>${fmt(r.kg)}</td><td>${fmt(r.rec)}</td><td><span class="badge ${badge(r.pct)}">${r.pct}%</span></td></tr>`;
+    });
+    t3+='</tbody></table>';
+    card3.innerHTML+=t3;
+    el.appendChild(card3);
+  }
+}
+
+// ── TAB 3: PORTAFOLIO ──
+function tab3(el) {
+  const pf=D.portafolio.filter(p=>p.kg_total>10000);
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<div class="card-t">Desarrollo de portafolio por canal</div><div class="card-s">Amplitud = % SKUs activos vs catálogo. Equilibrio = distribución entre líneas (1=equilibrado, 0=concentrado)</div>';
+  let tbl='<table><thead><tr><th>Canal</th><th>Kg total</th><th>SKUs activos</th><th>Amplitud</th><th>Equilibrio</th></tr></thead><tbody>';
+  pf.forEach(p=>{
+    tbl+=`<tr><td style="font-weight:500">${p.canal}</td><td>${fmt(p.kg_total)}</td><td>${p.skus_activos} / ${p.total_skus}</td><td><span class="badge ${p.amplitud>60?'b-grn':p.amplitud>30?'b-amb':'b-red'}">${p.amplitud}%</span></td><td style="font-weight:600">${(p.equilibrio*100).toFixed(0)}%</td></tr>`;
+  });
+  tbl+='</tbody></table>';
+  card.innerHTML+=tbl;
+  el.appendChild(card);
+
+  // Composición por línea (barras apiladas)
+  const card2=document.createElement('div');card2.className='card';
+  card2.innerHTML='<div class="card-t">Peso de líneas por canal (% del volumen)</div>';
+  el.appendChild(card2);
+
+  const allLineas=[...new Set(pf.flatMap(p=>Object.keys(p.composicion)))];
+  const colors=['#2563eb','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1','#14b8a6','#e11d48','#a855f7','#0ea5e9'];
+  const datasets2=allLineas.map((l,i)=>({
+    label:l,
+    data:pf.map(p=>p.composicion[l]||0),
+    backgroundColor:colors[i%14],
+    borderRadius:2
+  }));
+  makeChart(card2,{
+    type:'bar',
+    data:{labels:pf.map(p=>p.canal.substring(0,20)),datasets:datasets2},
+    options:{indexAxis:'y',scales:{x:{stacked:true,max:100,ticks:{callback:v=>v+'%'}},y:{stacked:true}},plugins:{legend:{position:'bottom',labels:{font:{size:9}}}}},
+  });
+  card2.querySelector('.chart-wrap').style.height=(pf.length*40+80)+'px';
+}
+
+// ── TAB 4: KG/DÍA HÁBIL ──
+function tab4(el) {
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<div class="card-t">Kilogramos por día hábil — evolución mensual</div><div class="card-s">Normaliza la estacionalidad eliminando el efecto de días hábiles por mes</div>';
+  el.appendChild(card);
+
+  const allM=[...new Set(D.kg_dia_habil.map(d=>d.mes))].sort((a,b)=>a-b);
+  makeChart(card,{
+    type:'bar',
+    data:{
+      labels:allM.map(m=>MN[m]),
+      datasets:[
+        {label:'2025',data:allM.map(m=>{const r=D.kg_dia_habil.find(d=>d.mes===m&&d.year===2025);return r?r.kg_dh:0}),backgroundColor:'#475569',borderRadius:4},
+        {label:'2026',data:allM.map(m=>{const r=D.kg_dia_habil.find(d=>d.mes===m&&d.year===2026);return r?r.kg_dh:0}),backgroundColor:'#2563eb',borderRadius:4}
+      ]
+    },
+    options:{scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v)}}}}
+  });
+
+  // Tabla de DH
+  const card2=document.createElement('div');card2.className='card';
+  card2.innerHTML='<div class="card-t">Días hábiles de facturación por mes</div>';
+  let tbl='<table><thead><tr>'+allM.map(m=>'<th>'+MN[m]+'</th>').join('')+'</tr></thead><tbody><tr>';
+  allM.forEach(m=>{tbl+=`<td style="text-align:center;font-weight:600">${D.meta.dias_habiles[m]||'—'}</td>`});
+  tbl+='</tr></tbody></table>';
+  card2.innerHTML+=tbl;
+  el.appendChild(card2);
+}
+
+// ── TAB 5: ANOMALÍAS ──
+function tab5(el) {
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML='<div class="card-t">Detección de anomalías — de lo general a lo particular</div><div class="card-s">Nivel 1: rubro/línea total → Nivel 2: canales por rubro → Nivel 3: líneas por canal</div>';
+
+  const niveles={1:'Rubro / líneas (total canales)',2:'Canales por rubro / sucursal',3:'Líneas por canal'};
+  let currentNivel=0;
+  (D.anomalias||[]).forEach(a=>{
+    if(a.nivel!==currentNivel){
+      card.innerHTML+=`<div style="font-size:13px;font-weight:600;color:var(--t1);margin:16px 0 8px">Nivel ${a.nivel} — ${niveles[a.nivel]||''}</div>`;
+      currentNivel=a.nivel;
+    }
+    const cls=a.severidad==='alta'?'a-red':'a-amb';
+    card.innerHTML+=`<div class="alert ${cls}"><strong>${a.tipo}:</strong> ${a.detalle}</div>`;
+  });
+
+  if(!D.anomalias||!D.anomalias.length){
+    card.innerHTML+='<div class="alert a-grn">No se detectaron anomalías significativas.</div>';
+  }
+  el.appendChild(card);
+
+  // Narrativa
+  const card2=document.createElement('div');card2.className='card';
+  card2.innerHTML=`<div class="card-t">Narrativa ejecutiva</div><div class="narr">${(D.narrativa||'').replace(/\n/g,'<br>')}</div>`;
+  el.appendChild(card2);
+}
+
+// Init
+showTab(0);
+</script>
+</body>
+</html>
